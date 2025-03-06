@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info:
+  title: Общие типы API
+  description: Общие компоненты для всех API
+  version: 1.0.0
+
+components:
+  schemas:
+    # Общий формат ответа API
+    ApiResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          description: Данные ответа
+        success:
+          type: boolean
+          description: Статус запроса (успех/ошибка)
+        message:
+          type: string
+          description: Сообщение об ошибке (если есть)
+        errorCode:
+          type: string
+          description: Код ошибки (если есть)
+      required:
+        - success
+
+    # Интерфейс для пагинированного ответа
+    PaginatedResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Общее количество элементов
+        next:
+          type: string
+          nullable: true
+          description: URL следующей страницы (если есть)
+        previous:
+          type: string
+          nullable: true
+          description: URL предыдущей страницы (если есть)
+        results:
+          type: array
+          description: Массив элементов на текущей странице
+          items:
+            type: object
+      required:
+        - count
+        - next
+        - previous
+        - results
+
+    # Параметры для пагинации
+    PaginationParams:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Номер страницы
+        page_size:
+          type: integer
+          description: Размер страницы
+        ordering:
+          type: string
+          description: Порядок сортировки
+
+    # Стандартный ответ об успехе
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Успешное выполнение операции
+        message:
+          type: string
+          description: Сообщение о результате операции
+      required:
+        - success
+
+    # Параметры для фильтрации по дате
+    DateRangeParams:
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date
+          description: Начальная дата для фильтрации
+        end_date:
+          type: string
+          format: date
+          description: Конечная дата для фильтрации
+
+    # Параметры для получения аналитики
+    AnalyticsParams:
+      allOf:
+        - $ref: '#/components/schemas/DateRangeParams'
+        - $ref: '#/components/schemas/PaginationParams'
+        - type: object
+          properties:
+            group_by:
+              type: string
+              enum: [day, week, month]
+              description: Группировка данных по периоду 

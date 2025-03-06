@@ -1,0 +1,364 @@
+openapi: 3.0.3
+info:
+  title: Модели пользователя API
+  description: Схемы данных для пользователей и аутентификации
+  version: 1.0.0
+
+components:
+  schemas:
+    # Настройки уведомлений пользователя
+    UserNotificationSettings:
+      type: object
+      properties:
+        email:
+          type: boolean
+          description: Уведомления по электронной почте
+        push:
+          type: boolean
+          description: Push-уведомления
+        recommendations:
+          type: boolean
+          description: Уведомления о рекомендациях
+        weekly_report:
+          type: boolean
+          description: Еженедельные отчеты
+      required:
+        - email
+        - push
+        - recommendations
+        - weekly_report
+
+    # Настройки приватности пользователя
+    UserPrivacySettings:
+      type: object
+      properties:
+        share_analytics:
+          type: boolean
+          description: Разрешить использовать аналитику в агрегированных данных
+        public_profile:
+          type: boolean
+          description: Разрешить просмотр профиля другим пользователям
+      required:
+        - share_analytics
+        - public_profile
+
+    # Профиль пользователя
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор пользователя
+        email:
+          type: string
+          format: email
+          description: Электронная почта пользователя
+        name:
+          type: string
+          description: Имя пользователя
+        age:
+          type: integer
+          nullable: true
+          description: Возраст пользователя
+        gender:
+          type: string
+          nullable: true
+          description: Пол пользователя
+        occupation:
+          type: string
+          nullable: true
+          description: Род деятельности пользователя
+        workHoursPerDay:
+          type: number
+          format: float
+          nullable: true
+          description: Стандартное количество рабочих часов в день
+        sleepHoursPerDay:
+          type: number
+          format: float
+          nullable: true
+          description: Желаемое количество часов сна в день
+        avatar:
+          type: string
+          nullable: true
+          description: URL аватара пользователя
+        phone:
+          type: string
+          nullable: true
+          description: Номер телефона пользователя
+        address:
+          type: string
+          nullable: true
+          description: Адрес пользователя
+        registeredAt:
+          type: string
+          format: date-time
+          description: Дата и время регистрации
+        lastLoginAt:
+          type: string
+          format: date-time
+          description: Дата и время последнего входа
+        notifications:
+          $ref: '#/components/schemas/UserNotificationSettings'
+          description: Настройки уведомлений
+        privacySettings:
+          $ref: '#/components/schemas/UserPrivacySettings'
+          description: Настройки приватности
+      required:
+        - id
+        - email
+        - name
+        - registeredAt
+        - lastLoginAt
+        - notifications
+        - privacySettings
+
+    # Данные активности пользователя
+    UserActivity:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор записи активности
+        user_id:
+          type: integer
+          description: Идентификатор пользователя
+        action:
+          type: string
+          description: Выполненное действие
+        ip_address:
+          type: string
+          nullable: true
+          description: IP-адрес пользователя
+        device:
+          type: string
+          nullable: true
+          description: Устройство пользователя
+        location:
+          type: string
+          nullable: true
+          description: Местоположение пользователя
+        timestamp:
+          type: string
+          format: date-time
+          description: Дата и время активности
+      required:
+        - id
+        - user_id
+        - action
+        - timestamp
+
+    # Учетные данные для входа
+    LoginCredentials:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Электронная почта пользователя
+        password:
+          type: string
+          format: password
+          description: Пароль пользователя
+      required:
+        - email
+        - password
+
+    # Данные для регистрации
+    RegisterData:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Электронная почта пользователя
+        username:
+          type: string
+          description: Имя пользователя
+        password:
+          type: string
+          format: password
+          description: Пароль пользователя
+        password2:
+          type: string
+          format: password
+          description: Подтверждение пароля
+      required:
+        - email
+        - username
+        - password
+        - password2
+
+    # Ответ авторизации
+    AuthResponse:
+      type: object
+      properties:
+        access:
+          type: string
+          description: JWT токен доступа
+        refresh:
+          type: string
+          description: JWT токен обновления
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              description: Идентификатор пользователя
+            email:
+              type: string
+              format: email
+              description: Электронная почта пользователя
+            username:
+              type: string
+              description: Имя пользователя
+          required:
+            - id
+            - email
+            - username
+      required:
+        - access
+        - refresh
+        - user
+
+    # Данные пользователя
+    UserData:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Идентификатор пользователя
+        email:
+          type: string
+          format: email
+          description: Электронная почта пользователя
+        username:
+          type: string
+          description: Имя пользователя
+      required:
+        - id
+        - email
+        - username
+
+    # Запрос для изменения пароля
+    ChangePasswordRequest:
+      type: object
+      properties:
+        old_password:
+          type: string
+          format: password
+          description: Текущий пароль
+        new_password:
+          type: string
+          format: password
+          description: Новый пароль
+        new_password2:
+          type: string
+          format: password
+          description: Подтверждение нового пароля
+      required:
+        - old_password
+        - new_password
+        - new_password2
+
+    # Запрос для сброса пароля
+    PasswordResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Электронная почта пользователя
+      required:
+        - email
+
+    # Запрос для подтверждения сброса пароля
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        uid:
+          type: string
+          description: Идентификатор пользователя (в зашифрованном виде)
+        token:
+          type: string
+          description: Токен сброса пароля
+        new_password:
+          type: string
+          format: password
+          description: Новый пароль
+        new_password2:
+          type: string
+          format: password
+          description: Подтверждение нового пароля
+      required:
+        - uid
+        - token
+        - new_password
+        - new_password2
+
+    # Запрос для обновления профиля пользователя
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя пользователя
+        age:
+          type: integer
+          description: Возраст пользователя
+        gender:
+          type: string
+          description: Пол пользователя
+        occupation:
+          type: string
+          description: Род деятельности пользователя
+        workHoursPerDay:
+          type: number
+          format: float
+          description: Стандартное количество рабочих часов в день
+        sleepHoursPerDay:
+          type: number
+          format: float
+          description: Желаемое количество часов сна в день
+        phone:
+          type: string
+          description: Номер телефона пользователя
+        address:
+          type: string
+          description: Адрес пользователя
+
+    # Запрос для обновления настроек уведомлений
+    NotificationSettingsUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: boolean
+          description: Уведомления по электронной почте
+        push:
+          type: boolean
+          description: Push-уведомления
+        recommendations:
+          type: boolean
+          description: Уведомления о рекомендациях
+        weekly_report:
+          type: boolean
+          description: Еженедельные отчеты
+      required:
+        - email
+        - push
+        - recommendations
+        - weekly_report
+
+    # Запрос для обновления настроек приватности
+    PrivacySettingsUpdateRequest:
+      type: object
+      properties:
+        share_analytics:
+          type: boolean
+          description: Разрешить использовать аналитику в агрегированных данных
+        public_profile:
+          type: boolean
+          description: Разрешить просмотр профиля другим пользователям
+      required:
+        - share_analytics
+        - public_profile 

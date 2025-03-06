@@ -1,0 +1,214 @@
+openapi: 3.0.3
+info:
+  title: Модели рабочей активности API
+  description: Схемы данных для API рабочей активности
+  version: 1.0.0
+
+components:
+  schemas:
+    # Типы рабочей активности
+    WorkActivityType:
+      type: string
+      enum: [FOCUS_WORK, MEETING, LEARNING, ADMIN_TASKS, BREAK, OTHER]
+      description: Тип рабочей активности
+
+    # Эффективность работы
+    WorkEfficiency:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+      description: Эффективность работы
+
+    # Запись о рабочей активности
+    WorkActivityRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор записи о рабочей активности
+        user_id:
+          type: integer
+          description: Идентификатор пользователя
+        date:
+          type: string
+          format: date
+          description: Дата рабочей активности
+        type:
+          $ref: '#/components/schemas/WorkActivityType'
+          description: Тип рабочей активности
+        task_name:
+          type: string
+          nullable: true
+          description: Название задачи
+        duration_minutes:
+          type: integer
+          description: Продолжительность в минутах
+        efficiency:
+          $ref: '#/components/schemas/WorkEfficiency'
+          nullable: true
+          description: Эффективность работы
+        notes:
+          type: string
+          nullable: true
+          description: Дополнительные заметки
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания записи
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата и время последнего обновления записи
+      required:
+        - id
+        - user_id
+        - date
+        - type
+        - duration_minutes
+        - created_at
+        - updated_at
+
+    # Аналитика по рабочей активности
+    WorkActivityAnalytics:
+      type: object
+      properties:
+        total_duration:
+          type: integer
+          description: Общая продолжительность в минутах
+        average_efficiency:
+          type: string
+          description: Средняя эффективность
+        most_productive_date:
+          type: string
+          format: date
+          description: Дата с наивысшей продуктивностью
+        by_type:
+          type: array
+          description: Аналитика по типам активности
+          items:
+            type: object
+            properties:
+              type:
+                $ref: '#/components/schemas/WorkActivityType'
+                description: Тип рабочей активности
+              total_minutes:
+                type: integer
+                description: Общее время в минутах
+              percentage:
+                type: number
+                format: float
+                description: Процент от общего времени
+            required:
+              - type
+              - total_minutes
+              - percentage
+        by_period:
+          type: array
+          description: Аналитика по периодам
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+                description: Период (день, неделя или месяц)
+              duration:
+                type: integer
+                description: Общее время в минутах за период
+              efficiency:
+                type: string
+                description: Средняя эффективность за период
+            required:
+              - period
+              - duration
+              - efficiency
+      required:
+        - total_duration
+        - average_efficiency
+        - most_productive_date
+        - by_type
+        - by_period
+
+    # Тип рабочей активности с идентификатором
+    WorkActivityTypeItem:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Идентификатор типа рабочей активности
+        name:
+          type: string
+          description: Название типа рабочей активности
+      required:
+        - id
+        - name
+
+    # Запрос для создания/обновления записи о рабочей активности
+    WorkActivityRecordRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Дата рабочей активности
+        type:
+          $ref: '#/components/schemas/WorkActivityType'
+          description: Тип рабочей активности
+        task_name:
+          type: string
+          description: Название задачи
+        duration_minutes:
+          type: integer
+          description: Продолжительность в минутах
+        efficiency:
+          $ref: '#/components/schemas/WorkEfficiency'
+          description: Эффективность работы
+        notes:
+          type: string
+          description: Дополнительные заметки
+      required:
+        - date
+        - type
+        - duration_minutes
+
+    # Ответ для списка записей о рабочей активности
+    WorkActivityListResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkActivityRecord'
+
+    # Ответ для детальной информации о записи рабочей активности
+    WorkActivityDetailResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/WorkActivityRecord'
+
+    # Ответ с аналитикой по рабочей активности
+    WorkActivityAnalyticsResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/WorkActivityAnalytics'
+
+    # Ответ для списка типов рабочей активности
+    WorkActivityTypesResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkActivityTypeItem' 

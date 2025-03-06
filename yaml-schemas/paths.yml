@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: API мониторинга стресса
+  description: API для мониторинга стресса, сна и рабочей активности
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:8000/api
+    description: Локальный сервер разработки
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+    description: Аутентификация и управление токенами
+  - name: users
+    description: Управление пользователями и профилями
+  - name: stress
+    description: Управление данными о стрессе
+  - name: sleep
+    description: Управление данными о сне
+  - name: work-activity
+    description: Управление данными о рабочей активности
+  - name: dashboard
+    description: API дашборда и аналитики
+  - name: recommendations
+    description: Управление рекомендациями
+
+paths:
+  # Аутентификация
+  /auth/token/:
+    post:
+      tags:
+        - auth
+      summary: Получение токена доступа
+      description: Вход пользователя и получение JWT токенов
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './user.yml#/components/schemas/LoginCredentials'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: './user.yml#/components/schemas/AuthResponse'
+        '400':
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+  
+  /auth/token/refresh/:
+    post:
+      tags:
+        - auth
+      summary: Обновление токена доступа
+      description: Получение нового токена доступа с использованием refresh-токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+                  description: Refresh-токен
+              required:
+                - refresh
+      responses:
+        '200':
+          description: Токен успешно обновлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                    description: Новый токен доступа
+                required:
+                  - access
+        '401':
+          description: Недействительный refresh-токен
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+
+  # Пользователи
+  /users/:
+    post:
+      tags:
+        - users
+      summary: Регистрация нового пользователя
+      description: Создание новой учетной записи пользователя
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './user.yml#/components/schemas/RegisterData'
+      responses:
+        '201':
+          description: Пользователь успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: './user.yml#/components/schemas/AuthResponse'
+        '400':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+  
+  /users/me/:
+    get:
+      tags:
+        - users
+      summary: Получение данных текущего пользователя
+      description: Получение профиля авторизованного пользователя
+      responses:
+        '200':
+          description: Данные профиля
+          content:
+            application/json:
+              schema:
+                $ref: './user.yml#/components/schemas/UserProfile'
+        '401':
+          description: Пользователь не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+    
+    patch:
+      tags:
+        - users
+      summary: Обновление профиля пользователя
+      description: Частичное обновление профиля авторизованного пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './user.yml#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: Профиль успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: './user.yml#/components/schemas/UserProfile'
+        '400':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+
+  # API стресса
+  /stress/:
+    get:
+      tags:
+        - stress
+      summary: Получение списка записей о стрессе
+      description: Получение списка записей о стрессе с пагинацией и фильтрацией
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/StartDateParam'
+        - $ref: '#/components/parameters/EndDateParam'
+      responses:
+        '200':
+          description: Список записей о стрессе
+          content:
+            application/json:
+              schema:
+                $ref: './stress.yml#/components/schemas/StressListResponse'
+    
+    post:
+      tags:
+        - stress
+      summary: Создание записи о стрессе
+      description: Создание новой записи о стрессе для текущего пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './stress.yml#/components/schemas/StressRecordRequest'
+      responses:
+        '201':
+          description: Запись успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: './stress.yml#/components/schemas/StressDetailResponse'
+        '400':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+
+  /stress/{id}/:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Идентификатор записи о стрессе
+        schema:
+          type: integer
+    
+    get:
+      tags:
+        - stress
+      summary: Получение записи о стрессе
+      description: Получение детальной информации о записи стресса
+      responses:
+        '200':
+          description: Данные записи о стрессе
+          content:
+            application/json:
+              schema:
+                $ref: './stress.yml#/components/schemas/StressDetailResponse'
+        '404':
+          description: Запись не найдена
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+    
+    put:
+      tags:
+        - stress
+      summary: Обновление записи о стрессе
+      description: Полное обновление записи о стрессе
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './stress.yml#/components/schemas/StressRecordRequest'
+      responses:
+        '200':
+          description: Запись успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: './stress.yml#/components/schemas/StressDetailResponse'
+        '400':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+    
+    delete:
+      tags:
+        - stress
+      summary: Удаление записи о стрессе
+      description: Удаление существующей записи о стрессе
+      responses:
+        '204':
+          description: Запись успешно удалена
+        '404':
+          description: Запись не найдена
+          content:
+            application/json:
+              schema:
+                $ref: './common.yml#/components/schemas/ApiResponse'
+
+  # Аналогично определить пути для сна и рабочей активности...
+
+  # Дашборд
+  /dashboard/summary/:
+    get:
+      tags:
+        - dashboard
+      summary: Получение сводки для дашборда
+      description: Получение общей сводки по стрессу, сну и рабочей активности
+      responses:
+        '200':
+          description: Данные сводки
+          content:
+            application/json:
+              schema:
+                $ref: './dashboard.yml#/components/schemas/DashboardSummaryResponse'
+
+components:
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Номер страницы для пагинации
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    
+    PageSizeParam:
+      name: page_size
+      in: query
+      description: Количество элементов на странице
+      schema:
+        type: integer
+        default: 10
+        minimum: 1
+        maximum: 100
+    
+    StartDateParam:
+      name: start_date
+      in: query
+      description: Начальная дата для фильтрации (YYYY-MM-DD)
+      schema:
+        type: string
+        format: date
+    
+    EndDateParam:
+      name: end_date
+      in: query
+      description: Конечная дата для фильтрации (YYYY-MM-DD)
+      schema:
+        type: string
+        format: date
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT 

@@ -1,0 +1,174 @@
+openapi: 3.0.3
+info:
+  title: Модели сна API
+  description: Схемы данных для API сна
+  version: 1.0.0
+
+components:
+  schemas:
+    # Качество сна
+    SleepQuality:
+      type: string
+      enum: [POOR, BELOW_AVERAGE, AVERAGE, GOOD, EXCELLENT]
+      description: Качество сна
+
+    # Запись о сне
+    SleepRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор записи о сне
+        user_id:
+          type: integer
+          description: Идентификатор пользователя
+        date:
+          type: string
+          format: date
+          description: Дата записи о сне
+        duration_hours:
+          type: number
+          format: float
+          description: Продолжительность сна в часах
+        quality:
+          $ref: '#/components/schemas/SleepQuality'
+          description: Качество сна
+        start_time:
+          type: string
+          format: time
+          nullable: true
+          description: Время начала сна
+        end_time:
+          type: string
+          format: time
+          nullable: true
+          description: Время окончания сна
+        notes:
+          type: string
+          nullable: true
+          description: Дополнительные заметки
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания записи
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата и время последнего обновления записи
+      required:
+        - id
+        - user_id
+        - date
+        - duration_hours
+        - quality
+        - created_at
+        - updated_at
+
+    # Аналитика по сну
+    SleepAnalytics:
+      type: object
+      properties:
+        average_duration:
+          type: number
+          format: float
+          description: Средняя продолжительность сна в часах
+        average_quality:
+          type: string
+          description: Среднее качество сна
+        best_quality_date:
+          type: string
+          format: date
+          description: Дата с лучшим качеством сна
+        worst_quality_date:
+          type: string
+          format: date
+          description: Дата с худшим качеством сна
+        by_period:
+          type: array
+          description: Аналитика по периодам
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+                description: Период (день, неделя или месяц)
+              average_duration:
+                type: number
+                format: float
+                description: Средняя продолжительность сна за период
+              average_quality:
+                type: string
+                description: Среднее качество сна за период
+            required:
+              - period
+              - average_duration
+              - average_quality
+      required:
+        - average_duration
+        - average_quality
+        - best_quality_date
+        - worst_quality_date
+        - by_period
+
+    # Запрос для создания/обновления записи о сне
+    SleepRecordRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Дата записи о сне
+        duration_hours:
+          type: number
+          format: float
+          description: Продолжительность сна в часах
+        quality:
+          $ref: '#/components/schemas/SleepQuality'
+          description: Качество сна
+        start_time:
+          type: string
+          format: time
+          description: Время начала сна
+        end_time:
+          type: string
+          format: time
+          description: Время окончания сна
+        notes:
+          type: string
+          description: Дополнительные заметки
+      required:
+        - date
+        - duration_hours
+        - quality
+
+    # Ответ для списка записей о сне
+    SleepListResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/SleepRecord'
+
+    # Ответ для детальной информации о записи сна
+    SleepDetailResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/SleepRecord'
+
+    # Ответ с аналитикой по сну
+    SleepAnalyticsResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/SleepAnalytics' 

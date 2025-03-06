@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: Модели стресса API
+  description: Схемы данных для API стресса
+  version: 1.0.0
+
+components:
+  schemas:
+    # Уровни стресса
+    StressLevel:
+      type: string
+      enum: [NONE, LOW, MEDIUM, HIGH, EXTREME]
+      description: Уровень стресса
+
+    # Причина стресса
+    StressCause:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор причины стресса
+        name:
+          type: string
+          description: Название причины стресса
+      required:
+        - id
+        - name
+
+    # Запись о стрессе
+    StressRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор записи о стрессе
+        user_id:
+          type: integer
+          description: Идентификатор пользователя
+        level:
+          $ref: '#/components/schemas/StressLevel'
+          description: Уровень стресса
+        date:
+          type: string
+          format: date
+          description: Дата записи о стрессе
+        causes:
+          type: array
+          description: Причины стресса
+          items:
+            $ref: '#/components/schemas/StressCause'
+        notes:
+          type: string
+          nullable: true
+          description: Дополнительные заметки
+        duration_minutes:
+          type: integer
+          nullable: true
+          description: Продолжительность стресса в минутах
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания записи
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата и время последнего обновления записи
+      required:
+        - id
+        - user_id
+        - level
+        - date
+        - causes
+        - created_at
+        - updated_at
+
+    # Причина стресса с количеством
+    StressCauseWithCount:
+      allOf:
+        - $ref: '#/components/schemas/StressCause'
+        - type: object
+          properties:
+            count:
+              type: integer
+              description: Количество случаев этой причины
+          required:
+            - count
+
+    # Аналитика по стрессу
+    StressAnalytics:
+      type: object
+      properties:
+        average_level:
+          type: number
+          format: float
+          description: Средний уровень стресса
+        total_duration:
+          type: integer
+          description: Общая продолжительность стресса в минутах
+        highest_level_date:
+          type: string
+          format: date
+          description: Дата с наивысшим уровнем стресса
+        most_common_causes:
+          type: array
+          description: Наиболее частые причины стресса
+          items:
+            $ref: '#/components/schemas/StressCauseWithCount'
+        by_period:
+          type: array
+          description: Аналитика по периодам
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+                description: Период (день, неделя или месяц)
+              average_level:
+                type: number
+                format: float
+                description: Средний уровень стресса за период
+              duration:
+                type: integer
+                description: Общая продолжительность стресса за период в минутах
+            required:
+              - period
+              - average_level
+              - duration
+      required:
+        - average_level
+        - total_duration
+        - highest_level_date
+        - most_common_causes
+        - by_period
+
+    # Запрос для создания/обновления записи о стрессе
+    StressRecordRequest:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/StressLevel'
+          description: Уровень стресса
+        date:
+          type: string
+          format: date
+          description: Дата записи о стрессе
+        causes:
+          oneOf:
+            - type: array
+              items:
+                type: integer
+              description: Массив идентификаторов причин стресса
+            - type: array
+              items:
+                $ref: '#/components/schemas/StressCause'
+              description: Массив объектов причин стресса
+        notes:
+          type: string
+          description: Дополнительные заметки
+        duration_minutes:
+          type: integer
+          description: Продолжительность стресса в минутах
+      required:
+        - level
+        - date
+        - causes
+
+    # Ответ для списка записей о стрессе
+    StressListResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/StressRecord'
+
+    # Ответ для детальной информации о записи стресса
+    StressDetailResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/StressRecord'
+
+    # Ответ с аналитикой по стрессу
+    StressAnalyticsResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/StressAnalytics'
+
+    # Ответ для списка причин стресса
+    StressCausesResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/StressCause' 

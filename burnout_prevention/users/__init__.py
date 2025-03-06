@@ -1,0 +1,1 @@
+default_app_config = 'burnout_prevention.users.apps.UsersConfig' 

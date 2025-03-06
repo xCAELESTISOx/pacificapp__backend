@@ -1,0 +1,525 @@
+openapi: 3.0.3
+info:
+  title: Модели дашборда API
+  description: Схемы данных для API дашборда
+  version: 1.0.0
+
+components:
+  schemas:
+    # Тренд
+    Trend:
+      type: string
+      enum: [INCREASING, DECREASING, STABLE]
+      description: Тенденция изменения показателя
+
+    # Сводка по стрессу для дашборда
+    StressSummary:
+      type: object
+      properties:
+        today_level:
+          $ref: '../stress.yml#/components/schemas/StressLevel'
+          description: Уровень стресса сегодня
+        week_average:
+          type: number
+          format: float
+          description: Средний уровень стресса за неделю
+        month_average:
+          type: number
+          format: float
+          description: Средний уровень стресса за месяц
+        trend:
+          $ref: '#/components/schemas/Trend'
+          description: Тенденция изменения уровня стресса
+      required:
+        - today_level
+        - week_average
+        - month_average
+        - trend
+
+    # Сводка по сну для дашборда
+    SleepSummary:
+      type: object
+      properties:
+        last_night_hours:
+          type: number
+          format: float
+          description: Количество часов сна прошлой ночью
+        last_night_quality:
+          $ref: '../sleep.yml#/components/schemas/SleepQuality'
+          description: Качество сна прошлой ночью
+        week_average_hours:
+          type: number
+          format: float
+          description: Средняя продолжительность сна за неделю
+        trend:
+          $ref: '#/components/schemas/Trend'
+          description: Тенденция изменения качества сна
+      required:
+        - last_night_hours
+        - last_night_quality
+        - week_average_hours
+        - trend
+
+    # Сводка по рабочей активности для дашборда
+    WorkActivitySummary:
+      type: object
+      properties:
+        today_hours:
+          type: number
+          format: float
+          description: Количество рабочих часов сегодня
+        week_total_hours:
+          type: number
+          format: float
+          description: Общее количество рабочих часов за неделю
+        efficiency_score:
+          type: number
+          format: float
+          description: Оценка эффективности
+        trend:
+          $ref: '#/components/schemas/Trend'
+          description: Тенденция изменения эффективности
+      required:
+        - today_hours
+        - week_total_hours
+        - efficiency_score
+        - trend
+
+    # Общая сводка для дашборда
+    DashboardSummary:
+      type: object
+      properties:
+        stress:
+          $ref: '#/components/schemas/StressSummary'
+          description: Сводка по стрессу
+        sleep:
+          $ref: '#/components/schemas/SleepSummary'
+          description: Сводка по сну
+        work_activity:
+          $ref: '#/components/schemas/WorkActivitySummary'
+          description: Сводка по рабочей активности
+        burnout_risk:
+          type: object
+          description: Данные о риске выгорания
+          properties:
+            current:
+              type: number
+              format: integer
+              description: Текущее значение риска выгорания (0-100)
+            previous:
+              type: number
+              format: integer
+              description: Предыдущее значение риска выгорания (0-100)
+            trend:
+              $ref: '#/components/schemas/Trend'
+              description: Тенденция изменения риска выгорания
+        recommendations_count:
+          type: integer
+          description: Общее количество рекомендаций
+        unread_recommendations:
+          type: integer
+          description: Количество непрочитанных рекомендаций
+      required:
+        - stress
+        - sleep
+        - work_activity
+        - recommendations_count
+        - unread_recommendations
+
+    # Данные для ежедневной статистики
+    DailyStats:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Дата статистики
+        stress_level:
+          type: number
+          format: float
+          description: Уровень стресса
+        sleep_hours:
+          type: number
+          format: float
+          description: Количество часов сна
+        sleep_quality:
+          $ref: '../sleep.yml#/components/schemas/SleepQuality'
+          description: Качество сна
+        work_hours:
+          type: number
+          format: float
+          description: Количество рабочих часов
+        work_efficiency:
+          type: number
+          format: float
+          description: Эффективность работы
+        balance_score:
+          type: number
+          format: float
+          description: Оценка баланса
+      required:
+        - date
+        - stress_level
+        - sleep_hours
+        - sleep_quality
+        - work_hours
+        - work_efficiency
+        - balance_score
+
+    # Сводка по стрессу в еженедельном отчете
+    WeeklyStressSummary:
+      type: object
+      properties:
+        average_level:
+          type: number
+          format: float
+          description: Средний уровень стресса
+        total_duration:
+          type: integer
+          description: Общая продолжительность стресса в минутах
+        highest_day:
+          type: string
+          format: date
+          description: День с наивысшим уровнем стресса
+      required:
+        - average_level
+        - total_duration
+        - highest_day
+
+    # Сводка по сну в еженедельном отчете
+    WeeklySleepSummary:
+      type: object
+      properties:
+        average_duration:
+          type: number
+          format: float
+          description: Средняя продолжительность сна
+        average_quality:
+          type: string
+          description: Среднее качество сна
+        best_day:
+          type: string
+          format: date
+          description: День с лучшим качеством сна
+      required:
+        - average_duration
+        - average_quality
+        - best_day
+
+    # Сводка по работе в еженедельном отчете
+    WeeklyWorkSummary:
+      type: object
+      properties:
+        total_hours:
+          type: number
+          format: float
+          description: Общее количество рабочих часов
+        productive_hours:
+          type: number
+          format: float
+          description: Количество продуктивных часов
+        meeting_hours:
+          type: number
+          format: float
+          description: Количество часов на совещаниях
+        average_efficiency:
+          type: string
+          description: Средняя эффективность
+      required:
+        - total_hours
+        - productive_hours
+        - meeting_hours
+        - average_efficiency
+
+    # Краткая рекомендация
+    ShortRecommendation:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Идентификатор рекомендации
+        text:
+          type: string
+          description: Текст рекомендации
+        priority:
+          type: string
+          description: Приоритет рекомендации
+      required:
+        - id
+        - text
+        - priority
+
+    # Еженедельный отчет
+    WeeklyReport:
+      type: object
+      properties:
+        week_number:
+          type: integer
+          description: Номер недели
+        year:
+          type: integer
+          description: Год
+        start_date:
+          type: string
+          format: date
+          description: Дата начала недели
+        end_date:
+          type: string
+          format: date
+          description: Дата окончания недели
+        stress_summary:
+          $ref: '#/components/schemas/WeeklyStressSummary'
+          description: Сводка по стрессу
+        sleep_summary:
+          $ref: '#/components/schemas/WeeklySleepSummary'
+          description: Сводка по сну
+        work_summary:
+          $ref: '#/components/schemas/WeeklyWorkSummary'
+          description: Сводка по работе
+        balance_score:
+          type: number
+          format: float
+          description: Оценка баланса
+        improvement:
+          type: string
+          description: Основное улучшение за неделю
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShortRecommendation'
+          description: Рекомендации
+      required:
+        - week_number
+        - year
+        - start_date
+        - end_date
+        - stress_summary
+        - sleep_summary
+        - work_summary
+        - balance_score
+        - improvement
+        - recommendations
+
+    # Данные тенденций
+    TrendData:
+      type: object
+      properties:
+        stress:
+          type: object
+          properties:
+            periods:
+              type: array
+              items:
+                type: string
+              description: Периоды
+            values:
+              type: array
+              items:
+                type: number
+              description: Значения
+            trend:
+              $ref: '#/components/schemas/Trend'
+              description: Общая тенденция
+          required:
+            - periods
+            - values
+            - trend
+        sleep:
+          type: object
+          properties:
+            periods:
+              type: array
+              items:
+                type: string
+              description: Периоды
+            values:
+              type: array
+              items:
+                type: number
+              description: Значения
+            trend:
+              $ref: '#/components/schemas/Trend'
+              description: Общая тенденция
+          required:
+            - periods
+            - values
+            - trend
+        work:
+          type: object
+          properties:
+            periods:
+              type: array
+              items:
+                type: string
+              description: Периоды
+            values:
+              type: array
+              items:
+                type: number
+              description: Значения
+            trend:
+              $ref: '#/components/schemas/Trend'
+              description: Общая тенденция
+          required:
+            - periods
+            - values
+            - trend
+        balance:
+          type: object
+          properties:
+            periods:
+              type: array
+              items:
+                type: string
+              description: Периоды
+            values:
+              type: array
+              items:
+                type: number
+              description: Значения
+            trend:
+              $ref: '#/components/schemas/Trend'
+              description: Общая тенденция
+          required:
+            - periods
+            - values
+            - trend
+      required:
+        - stress
+        - sleep
+        - work
+        - balance
+
+    # Данные KPI
+    KpiData:
+      type: object
+      properties:
+        stress_reduction:
+          type: object
+          properties:
+            target:
+              type: number
+              format: float
+              description: Целевое значение
+            current:
+              type: number
+              format: float
+              description: Текущее значение
+            progress:
+              type: number
+              format: float
+              description: Прогресс в процентах
+          required:
+            - target
+            - current
+            - progress
+        sleep_quality:
+          type: object
+          properties:
+            target:
+              type: number
+              format: float
+              description: Целевое значение
+            current:
+              type: number
+              format: float
+              description: Текущее значение
+            progress:
+              type: number
+              format: float
+              description: Прогресс в процентах
+          required:
+            - target
+            - current
+            - progress
+        work_efficiency:
+          type: object
+          properties:
+            target:
+              type: number
+              format: float
+              description: Целевое значение
+            current:
+              type: number
+              format: float
+              description: Текущее значение
+            progress:
+              type: number
+              format: float
+              description: Прогресс в процентах
+          required:
+            - target
+            - current
+            - progress
+        balance_improvement:
+          type: object
+          properties:
+            target:
+              type: number
+              format: float
+              description: Целевое значение
+            current:
+              type: number
+              format: float
+              description: Текущее значение
+            progress:
+              type: number
+              format: float
+              description: Прогресс в процентах
+          required:
+            - target
+            - current
+            - progress
+      required:
+        - stress_reduction
+        - sleep_quality
+        - work_efficiency
+        - balance_improvement
+
+    # Ответы API
+    DashboardSummaryResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/DashboardSummary'
+
+    DailyStatsResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/DailyStats'
+
+    WeeklyReportResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/WeeklyReport'
+
+    TrendsResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/TrendData'
+
+    KpiResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/KpiData' 

@@ -1,0 +1,107 @@
+openapi: 3.0.3
+info:
+  title: Модели рекомендаций API
+  description: Схемы данных для API рекомендаций
+  version: 1.0.0
+
+components:
+  schemas:
+    # Категория рекомендации
+    RecommendationCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор категории
+        name:
+          type: string
+          description: Название категории
+      required:
+        - id
+        - name
+
+    # Типы рекомендаций
+    RecommendationType:
+      type: string
+      enum: [STRESS, SLEEP, WORK, BALANCE]
+      description: Тип рекомендации
+
+    # Приоритеты рекомендаций
+    RecommendationPriority:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+      description: Приоритет рекомендации
+
+    # Полная модель рекомендации
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор рекомендации
+        user_id:
+          type: integer
+          description: Идентификатор пользователя
+        title:
+          type: string
+          description: Заголовок рекомендации
+        text:
+          type: string
+          description: Текст рекомендации
+        category:
+          $ref: '#/components/schemas/RecommendationCategory'
+          description: Категория рекомендации
+        priority:
+          $ref: '#/components/schemas/RecommendationPriority'
+          description: Приоритет рекомендации
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания рекомендации
+        is_read:
+          type: boolean
+          description: Прочитана ли рекомендация
+        is_helpful:
+          type: boolean
+          nullable: true
+          description: Отметил ли пользователь рекомендацию как полезную
+      required:
+        - id
+        - user_id
+        - title
+        - text
+        - category
+        - priority
+        - created_at
+        - is_read
+
+    # Запрос для отметки рекомендации как полезной
+    MarkRecommendationHelpfulRequest:
+      type: object
+      properties:
+        helpful:
+          type: boolean
+          description: Признак полезности рекомендации
+      required:
+        - helpful
+
+    # Ответы API
+    RecommendationListResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/Recommendation'
+
+    RecommendationDetailResponse:
+      type: object
+      allOf:
+        - $ref: '../common.yml#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Recommendation' 
