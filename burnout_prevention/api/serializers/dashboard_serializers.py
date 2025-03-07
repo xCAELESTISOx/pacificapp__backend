@@ -13,8 +13,17 @@ class SleepDataSerializer(serializers.Serializer):
     trend = TrendSerializer()
 
 class StressDataSerializer(serializers.Serializer):
-    average_level = serializers.FloatField()
+    avg_level = serializers.FloatField()
+    max_level = serializers.FloatField()
+    min_level = serializers.FloatField()
     total_records = serializers.IntegerField()
+    start_date = serializers.CharField()
+    end_date = serializers.CharField()
+    statistics = serializers.ListField(
+        child=serializers.DictField(
+            child=serializers.CharField()
+        )
+    )
     trend = TrendSerializer()
 
 class WorkDataSerializer(serializers.Serializer):

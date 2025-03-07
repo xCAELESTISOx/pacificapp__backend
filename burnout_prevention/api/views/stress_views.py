@@ -1,4 +1,4 @@
-from django.db.models import Avg, Count, F
+from django.db.models import Avg, Count, F, Max, Min
 from django.utils import timezone
 from datetime import datetime, timedelta
 from rest_framework import viewsets, permissions, status, views
@@ -64,6 +64,28 @@ class StressLevelViewSet(viewsets.ModelViewSet):
         # Средний уровень стресса
         avg_level = user_stress_levels.aggregate(avg_level=Avg('level'))['avg_level'] or 0
         
+        # Максимальный и минимальный уровень стресса
+        max_level = user_stress_levels.aggregate(max_level=Max('level'))['max_level'] or 0
+        min_level = user_stress_levels.aggregate(min_level=Min('level'))['min_level'] or 0
+        
+        # Расчет тренда (сравнение с предыдущим периодом такой же длительности)
+        previous_start_date = start_date - (end_date - start_date)
+        previous_end_date = start_date - timedelta(days=1)
+        
+        previous_period_levels = StressLevel.objects.filter(
+            user=request.user,
+            created_at__date__gte=previous_start_date,
+            created_at__date__lte=previous_end_date
+        )
+        
+        previous_avg_level = previous_period_levels.aggregate(avg_level=Avg('level'))['avg_level'] or 0
+        trend_value = avg_level - previous_avg_level
+        trend_direction = 'stable'
+        if trend_value > 0:
+            trend_direction = 'up'
+        elif trend_value < 0:
+            trend_direction = 'down'
+        
         # Статистика по дням
         daily_stats = user_stress_levels.values('created_at__date').annotate(
             date=F('created_at__date'),
@@ -82,7 +104,15 @@ class StressLevelViewSet(viewsets.ModelViewSet):
         
         data = {
             'avg_level': avg_level,
+            'max_level': max_level,
+            'min_level': min_level,
             'total_records': user_stress_levels.count(),
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'trend': {
+                'value': trend_value,
+                'direction': trend_direction
+            },
             'statistics': statistics
         }
         
@@ -121,6 +151,28 @@ class StressStatisticsView(views.APIView):
         # Средний уровень стресса
         avg_level = user_stress_levels.aggregate(avg_level=Avg('level'))['avg_level'] or 0
         
+        # Максимальный и минимальный уровень стресса
+        max_level = user_stress_levels.aggregate(max_level=Max('level'))['max_level'] or 0
+        min_level = user_stress_levels.aggregate(min_level=Min('level'))['min_level'] or 0
+        
+        # Расчет тренда (сравнение с предыдущим периодом такой же длительности)
+        previous_start_date = start_date - (end_date - start_date)
+        previous_end_date = start_date - timedelta(days=1)
+        
+        previous_period_levels = StressLevel.objects.filter(
+            user=request.user,
+            created_at__date__gte=previous_start_date,
+            created_at__date__lte=previous_end_date
+        )
+        
+        previous_avg_level = previous_period_levels.aggregate(avg_level=Avg('level'))['avg_level'] or 0
+        trend_value = avg_level - previous_avg_level
+        trend_direction = 'stable'
+        if trend_value > 0:
+            trend_direction = 'up'
+        elif trend_value < 0:
+            trend_direction = 'down'
+        
         # Статистика по дням
         daily_stats = user_stress_levels.values('created_at__date').annotate(
             date=F('created_at__date'),
@@ -139,7 +191,15 @@ class StressStatisticsView(views.APIView):
         
         data = {
             'avg_level': avg_level,
+            'max_level': max_level,
+            'min_level': min_level,
             'total_records': user_stress_levels.count(),
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'trend': {
+                'value': trend_value,
+                'direction': trend_direction
+            },
             'statistics': statistics
         }
         

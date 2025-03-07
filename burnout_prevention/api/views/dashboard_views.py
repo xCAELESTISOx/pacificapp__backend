@@ -1,4 +1,4 @@
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Max, Min
 from django.utils import timezone
 from datetime import datetime, timedelta
 from rest_framework import views, permissions, status
@@ -271,8 +271,22 @@ class DashboardView(views.APIView):
                 }
             },
             'stress': {
-                'average_level': stress_level_monthly_avg,
+                'avg_level': stress_level_monthly_avg,
+                'max_level': stress_records_month.aggregate(max_level=Max('level'))['max_level'] or 0,
+                'min_level': stress_records_month.aggregate(min_level=Min('level'))['min_level'] or 0,
                 'total_records': stress_records.count(),
+                'start_date': month_ago.strftime('%Y-%m-%d'),
+                'end_date': today.strftime('%Y-%m-%d'),
+                'statistics': [
+                    {
+                        'date': day.strftime('%Y-%m-%d'),
+                        'avg_level': stress_records.filter(
+                            created_at__date=day
+                        ).aggregate(avg_level=Avg('level'))['avg_level'] or 0,
+                        'count': stress_records.filter(created_at__date=day).count()
+                    }
+                    for day in [(today - timedelta(days=i)) for i in range(30)]
+                ],
                 'trend': {
                     'value': stress_level_trend,
                     'direction': 'down' if stress_level_trend < 0 else ('up' if stress_level_trend > 0 else 'stable')
