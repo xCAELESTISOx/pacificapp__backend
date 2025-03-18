@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     'django_filters',
     
     # Local apps
-    'burnout_prevention.core',
     'burnout_prevention.users',
     'burnout_prevention.recommendations',
     'burnout_prevention.analytics',

@@ -26,17 +26,27 @@ class WorkActivityCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class DailyWorkDataSerializer(serializers.Serializer):
+    """
+    Сериализатор для ежедневных данных рабочей активности.
+    """
+    date = serializers.CharField()
+    duration_hours = serializers.FloatField()
+    productivity = serializers.FloatField(allow_null=True)
+    notes = serializers.CharField(allow_null=True, allow_blank=True)
+
+
 class WorkStatisticsSerializer(serializers.Serializer):
     """
     Сериализатор для статистики рабочей активности.
     """
-    avg_duration = serializers.FloatField()
-    avg_breaks = serializers.FloatField()
-    avg_breaks_duration = serializers.FloatField()
-    avg_productivity = serializers.FloatField()
+    average_duration = serializers.FloatField()
+    average_productivity = serializers.FloatField(allow_null=True)
+    average_breaks_count = serializers.FloatField(allow_null=True)
+    average_breaks_duration = serializers.FloatField(allow_null=True)
     total_records = serializers.IntegerField()
-    statistics = serializers.ListField(
-        child=serializers.DictField(
-            child=serializers.CharField()
-        )
+    start_date = serializers.CharField()
+    end_date = serializers.CharField()
+    daily_data = serializers.ListField(
+        child=DailyWorkDataSerializer()
     ) 

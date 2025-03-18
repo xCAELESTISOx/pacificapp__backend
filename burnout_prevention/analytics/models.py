@@ -104,10 +104,15 @@ class BurnoutRisk(models.Model):
     Модель для отслеживания риска выгорания пользователя
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='burnout_risks')
+    date = models.DateField(auto_now_add=True)
     risk_level = models.IntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         help_text="Уровень риска выгорания (0-100)"
     )
+    factors = models.JSONField(default=dict, blank=True, null=True,
+                              help_text="Факторы риска выгорания и их значения")
+    recommendations = models.JSONField(default=list, blank=True, null=True,
+                                     help_text="Рекомендации по предотвращению выгорания")
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):

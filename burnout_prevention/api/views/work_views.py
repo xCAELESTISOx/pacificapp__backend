@@ -12,7 +12,8 @@ from burnout_prevention.analytics.models import WorkActivity
 from ..serializers.work_serializers import (
     WorkActivitySerializer, 
     WorkActivityCreateSerializer,
-    WorkStatisticsSerializer
+    WorkStatisticsSerializer,
+    DailyWorkDataSerializer
 )
 
 
@@ -92,7 +93,10 @@ class WorkActivityViewSet(viewsets.ModelViewSet):
             ),
         ],
         responses={
-            200: WorkStatisticsSerializer,
+            200: openapi.Response(
+                description="Статистика рабочей активности",
+                schema=WorkStatisticsSerializer
+            ),
             400: "Неверный формат даты"
         }
     )
@@ -106,6 +110,16 @@ class WorkActivityViewSet(viewsets.ModelViewSet):
         общую продуктивность и детальную статистику по дням.
         
         Если параметры дат не указаны, возвращает статистику за последние 30 дней.
+        
+        Возвращаемые данные включают:
+        - average_duration: Средняя продолжительность работы в часах
+        - average_productivity: Средняя продуктивность (0-10)
+        - average_breaks_count: Среднее количество перерывов
+        - average_breaks_duration: Средняя продолжительность перерывов в минутах
+        - total_records: Общее количество записей
+        - start_date: Начальная дата периода в формате YYYY-MM-DD
+        - end_date: Конечная дата периода в формате YYYY-MM-DD
+        - daily_data: Ежедневные данные о работе с датой, продолжительностью, продуктивностью и заметками
         """
         start_date_str = request.query_params.get('start_date')
         end_date_str = request.query_params.get('end_date')
@@ -139,24 +153,25 @@ class WorkActivityViewSet(viewsets.ModelViewSet):
         avg_productivity = aggregation['avg_productivity'] or 0
         
         # Статистика по дням
-        statistics = [
+        daily_data = [
             {
                 'date': activity.date.strftime('%Y-%m-%d'),
                 'duration_hours': activity.duration_hours,
-                'breaks_count': activity.breaks_count,
-                'breaks_total_minutes': activity.breaks_total_minutes,
-                'productivity': activity.productivity
+                'productivity': activity.productivity,
+                'notes': activity.notes
             }
             for activity in user_work_activities.order_by('date')
         ]
         
         data = {
-            'avg_duration': avg_duration,
-            'avg_breaks': avg_breaks,
-            'avg_breaks_duration': avg_breaks_duration,
-            'avg_productivity': avg_productivity,
+            'average_duration': avg_duration,
+            'average_breaks_count': avg_breaks,
+            'average_breaks_duration': avg_breaks_duration,
+            'average_productivity': avg_productivity,
             'total_records': user_work_activities.count(),
-            'statistics': statistics
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'daily_data': daily_data
         }
         
         serializer = WorkStatisticsSerializer(data)
@@ -188,7 +203,10 @@ class WorkStatisticsView(views.APIView):
             ),
         ],
         responses={
-            200: WorkStatisticsSerializer,
+            200: openapi.Response(
+                description="Статистика рабочей активности",
+                schema=WorkStatisticsSerializer
+            ),
             400: "Неверный формат даты"
         }
     )
@@ -199,6 +217,16 @@ class WorkStatisticsView(views.APIView):
         Предоставляет детальную информацию о работе пользователя,
         включая продолжительность, количество перерывов и
         оценку продуктивности за каждый день в выбранном диапазоне.
+        
+        Возвращаемые данные включают:
+        - average_duration: Средняя продолжительность работы в часах
+        - average_productivity: Средняя продуктивность (0-10)
+        - average_breaks_count: Среднее количество перерывов
+        - average_breaks_duration: Средняя продолжительность перерывов в минутах
+        - total_records: Общее количество записей
+        - start_date: Начальная дата периода в формате YYYY-MM-DD
+        - end_date: Конечная дата периода в формате YYYY-MM-DD
+        - daily_data: Ежедневные данные о работе с датой, продолжительностью, продуктивностью и заметками
         """
         start_date_str = request.query_params.get('start_date')
         end_date_str = request.query_params.get('end_date')
@@ -232,24 +260,25 @@ class WorkStatisticsView(views.APIView):
         avg_productivity = aggregation['avg_productivity'] or 0
         
         # Статистика по дням
-        statistics = [
+        daily_data = [
             {
                 'date': activity.date.strftime('%Y-%m-%d'),
                 'duration_hours': activity.duration_hours,
-                'breaks_count': activity.breaks_count,
-                'breaks_total_minutes': activity.breaks_total_minutes,
-                'productivity': activity.productivity
+                'productivity': activity.productivity,
+                'notes': activity.notes
             }
             for activity in user_work_activities.order_by('date')
         ]
         
         data = {
-            'avg_duration': avg_duration,
-            'avg_breaks': avg_breaks,
-            'avg_breaks_duration': avg_breaks_duration,
-            'avg_productivity': avg_productivity,
+            'average_duration': avg_duration,
+            'average_breaks_count': avg_breaks,
+            'average_breaks_duration': avg_breaks_duration,
+            'average_productivity': avg_productivity,
             'total_records': user_work_activities.count(),
-            'statistics': statistics
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'daily_data': daily_data
         }
         
         serializer = WorkStatisticsSerializer(data)

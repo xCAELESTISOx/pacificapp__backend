@@ -13,6 +13,7 @@ from burnout_prevention.analytics.models import (
 )
 from burnout_prevention.recommendations.models import UserRecommendation
 from ..serializers.dashboard_serializers import DashboardSerializer
+from .burnout_views import BurnoutRiskViewSet
 
 
 class DashboardView(views.APIView):
@@ -124,80 +125,32 @@ class DashboardView(views.APIView):
         
         work_duration_trend = work_duration_weekly_avg - prev_week_work_duration
         
-        # Получаем данные о риске выгорания
+        # Получаем данные о риске выгорания (динамический расчет)
         burnout_risk_data = None
-        burnout_risks = BurnoutRisk.objects.all()
         if user_is_authenticated:
-            burnout_risks = burnout_risks.filter(user=user)
-        else:
-            burnout_risks = BurnoutRisk.objects.none()
+            # Создаем экземпляр BurnoutRiskViewSet для использования его метода _calculate_burnout_risk
+            burnout_risk_viewset = BurnoutRiskViewSet()
             
-        latest_burnout_risk = burnout_risks.order_by('-created_at').first()
-        burnout_risk_current = 0
-        burnout_risk_previous = 0
-        burnout_risk_trend = 0
-        
-        if latest_burnout_risk:
-            burnout_risk_current = latest_burnout_risk.risk_level
+            # Рассчитываем текущий риск выгорания
+            current_risk_data = burnout_risk_viewset._calculate_burnout_risk(user)
+            current_risk_level = current_risk_data['risk_level']
             
-            prev_burnout_risk = burnout_risks.exclude(id=latest_burnout_risk.id).order_by('-created_at').first()
-            burnout_risk_previous = prev_burnout_risk.risk_level if prev_burnout_risk else 0
-            burnout_risk_trend = burnout_risk_current - burnout_risk_previous
+            # Рассчитываем риск выгорания для предыдущего дня
+            yesterday = today - timedelta(days=1)
+            prev_risk_data = burnout_risk_viewset._calculate_burnout_risk(user, yesterday)
+            prev_risk_level = prev_risk_data['risk_level']
+            
+            # Рассчитываем тренд
+            burnout_risk_trend = current_risk_level - prev_risk_level
             
             burnout_risk_data = {
-                'current': burnout_risk_current,
-                'previous': burnout_risk_previous,
+                'current': current_risk_level,
+                'previous': prev_risk_level,
                 'trend': {
                     'value': burnout_risk_trend,
                     'direction': 'up' if burnout_risk_trend > 0 else ('down' if burnout_risk_trend < 0 else 'stable')
                 }
             }
-        # Если нет существующих данных о риске выгорания, пытаемся рассчитать динамически
-        elif user_is_authenticated:
-            # Проверяем наличие всех необходимых данных для расчета
-            has_stress_data = latest_stress is not None
-            has_sleep_data = latest_sleep is not None
-            has_work_data = latest_work is not None
-            
-            # Рассчитываем риск выгорания только если есть все необходимые данные
-            if has_stress_data and has_sleep_data and has_work_data:
-                # Определяем вес каждого фактора в определении риска выгорания
-                stress_weight = 0.4
-                sleep_weight = 0.3
-                work_weight = 0.3
-                
-                # Рассчитываем компоненты риска выгорания
-                stress_risk = min(stress_level_current * 10, 100)
-                
-                # Инвертируем оценку сна (меньше сна = выше риск)
-                sleep_risk = max(0, 100 - (sleep_duration_current * 10))
-                
-                # Риск по работе (длительная работа и низкая продуктивность увеличивают риск)
-                work_duration_risk = min(work_duration_current * 5, 100)
-                work_productivity_risk = max(0, 100 - (work_productivity_current * 10))
-                work_risk = (work_duration_risk + work_productivity_risk) / 2
-                
-                # Общий риск выгорания
-                burnout_risk_current = int(
-                    stress_risk * stress_weight + 
-                    sleep_risk * sleep_weight + 
-                    work_risk * work_weight
-                )
-                
-                # Создаем новую запись о риске выгорания
-                new_risk = BurnoutRisk(
-                    user=user,
-                    risk_level=burnout_risk_current
-                )
-                new_risk.save()
-                
-                burnout_risk_data = {
-                    'current': burnout_risk_current,
-                    'trend': {
-                        'value': burnout_risk_current,
-                        'direction': 'up' if burnout_risk_current > 0 else 'stable'
-                    }
-                }
         
         # Получаем данные о рекомендациях
         pending_recommendations_count = 0
@@ -251,64 +204,90 @@ class DashboardView(views.APIView):
                                 'title': rec[1],
                                 'category': rec[2],
                                 'status': rec[3]
-                            }
-                            for rec in latest_recs
+                            } for rec in latest_recs
                         ]
-            except Exception:
-                # В случае любой ошибки с БД, оставляем базовые значения
+            except Exception as e:
+                # Просто пропускаем ошибки для безопасности
                 pass
         
-        # Формируем данные для панели мониторинга в соответствии с новой схемой
+        # Формируем данные для панели мониторинга
         dashboard_data = {
-            # Новая структура в соответствии со схемой TS фронтенда
+            # Сон
             'sleep': {
-                'average_duration': sleep_duration_monthly_avg,
-                'average_quality': sleep_quality_monthly_avg,
-                'total_records': sleep_records.count(),
+                'average_duration': sleep_duration_weekly_avg,
+                'average_quality': sleep_quality_weekly_avg,
+                'total_records': sleep_records_week.count(),
                 'trend': {
                     'value': sleep_duration_trend,
                     'direction': 'up' if sleep_duration_trend > 0 else ('down' if sleep_duration_trend < 0 else 'stable')
                 }
             },
+            # Стресс
             'stress': {
-                'avg_level': stress_level_monthly_avg,
-                'max_level': stress_records_month.aggregate(max_level=Max('level'))['max_level'] or 0,
-                'min_level': stress_records_month.aggregate(min_level=Min('level'))['min_level'] or 0,
-                'total_records': stress_records.count(),
-                'start_date': month_ago.strftime('%Y-%m-%d'),
+                'avg_level': stress_level_weekly_avg,
+                'max_level': stress_records_week.aggregate(max=Max('level'))['max'] or 0,
+                'min_level': stress_records_week.aggregate(min=Min('level'))['min'] or 0,
+                'total_records': stress_records_week.count(),
+                'start_date': week_ago.strftime('%Y-%m-%d'),
                 'end_date': today.strftime('%Y-%m-%d'),
-                'statistics': [
-                    {
-                        'date': day.strftime('%Y-%m-%d'),
-                        'avg_level': stress_records.filter(
-                            created_at__date=day
-                        ).aggregate(avg_level=Avg('level'))['avg_level'] or 0,
-                        'count': stress_records.filter(created_at__date=day).count()
-                    }
-                    for day in [(today - timedelta(days=i)) for i in range(30)]
-                ],
+                'statistics': [], # Будет заполнено позже
                 'trend': {
                     'value': stress_level_trend,
-                    'direction': 'down' if stress_level_trend < 0 else ('up' if stress_level_trend > 0 else 'stable')
+                    'direction': 'up' if stress_level_trend > 0 else ('down' if stress_level_trend < 0 else 'stable')
                 }
             },
+            # Работа
             'work': {
-                'average_duration': work_duration_monthly_avg,
-                'average_productivity': work_productivity_monthly_avg,
-                'total_records': work_records.count(),
+                'average_duration': work_duration_weekly_avg,
+                'average_productivity': work_productivity_weekly_avg,
+                'total_records': work_records_week.count(),
                 'trend': {
                     'value': work_duration_trend,
                     'direction': 'up' if work_duration_trend > 0 else ('down' if work_duration_trend < 0 else 'stable')
                 }
             },
+            # Рекомендации
             'recommendations': {
                 'pending': pending_recommendations_count,
                 'completed': completed_recommendations_count,
                 'accepted': accepted_recommendations_count,
                 'latest': latest_recommendations
             },
+            # Риск выгорания
             'burnout_risk': burnout_risk_data
         }
         
+        # Форматируем статистику для стресса
+        # Группируем данные по дням и рассчитываем средний стресс для каждого дня
+        if user_is_authenticated:
+            daily_stress = {}
+            
+            # Создаем словарь для хранения данных по дням
+            date_range = [week_ago + timedelta(days=i) for i in range((today - week_ago).days + 1)]
+            for date in date_range:
+                date_str = date.strftime('%Y-%m-%d')
+                daily_stress[date_str] = {
+                    'date': date_str,
+                    'level': 0,
+                    'count': 0
+                }
+                
+            # Заполняем данные по стрессу
+            for record in stress_records_week:
+                date_str = record.created_at.date().strftime('%Y-%m-%d')
+                if date_str in daily_stress:
+                    daily_stress[date_str]['level'] += record.level
+                    daily_stress[date_str]['count'] += 1
+                    
+            # Рассчитываем средний стресс для каждого дня
+            for date_str, data in daily_stress.items():
+                if data['count'] > 0:
+                    data['level'] = round(data['level'] / data['count'], 1)
+                    
+            # Сортируем по дате и добавляем в ответ
+            dashboard_data['stress']['statistics'] = [
+                data for _, data in sorted(daily_stress.items())
+            ]
+            
         serializer = DashboardSerializer(dashboard_data)
         return Response(serializer.data) 
